@@ -1,0 +1,601 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "agent/agentGrpc/agent.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Agent"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/agent/accessPrivate": {
+      "post": {
+        "operationId": "Agent_AccessPrivate",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/AccessPrivateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "bindAddress",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "autoMode",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "autoAddress",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "autoStartPort",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "autoEndPort",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "responseHeaders",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          }
+        ],
+        "tags": [
+          "Agent"
+        ]
+      }
+    },
+    "/v1/agent/httpShareHealthcheck": {
+      "post": {
+        "operationId": "Agent_ShareHttpHealthcheck",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ShareHttpHealthcheckResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "httpVerb",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "endpoint",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "expectedHttpResponse",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "timeoutMs",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Agent"
+        ]
+      }
+    },
+    "/v1/agent/releaseAccess": {
+      "post": {
+        "operationId": "Agent_ReleaseAccess",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ReleaseAccessResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "frontendToken",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Agent"
+        ]
+      }
+    },
+    "/v1/agent/releaseShare": {
+      "post": {
+        "operationId": "Agent_ReleaseShare",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ReleaseShareResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Agent"
+        ]
+      }
+    },
+    "/v1/agent/sharePrivate": {
+      "post": {
+        "operationId": "Agent_SharePrivate",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/SharePrivateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "target",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "privateShareToken",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "backendMode",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "insecure",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "closed",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "accessGrants",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          }
+        ],
+        "tags": [
+          "Agent"
+        ]
+      }
+    },
+    "/v1/agent/sharePublic": {
+      "post": {
+        "operationId": "Agent_SharePublic",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/SharePublicResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "target",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "basicAuth",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          },
+          {
+            "name": "backendMode",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "insecure",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "oauthProvider",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "oauthEmailDomains",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          },
+          {
+            "name": "oauthRefreshInterval",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "closed",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "accessGrants",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          }
+        ],
+        "tags": [
+          "Agent"
+        ]
+      }
+    },
+    "/v1/agent/status": {
+      "get": {
+        "operationId": "Agent_Status",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/StatusResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "Agent"
+        ]
+      }
+    },
+    "/v1/agent/version": {
+      "get": {
+        "operationId": "Agent_Version",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/VersionResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "Agent"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "AccessDetail": {
+      "type": "object",
+      "properties": {
+        "frontendToken": {
+          "type": "string"
+        },
+        "token": {
+          "type": "string"
+        },
+        "bindAddress": {
+          "type": "string"
+        },
+        "responseHeaders": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "type": "string"
+        },
+        "failure": {
+          "$ref": "#/definitions/Failure"
+        }
+      }
+    },
+    "AccessPrivateResponse": {
+      "type": "object",
+      "properties": {
+        "frontendToken": {
+          "type": "string"
+        }
+      }
+    },
+    "Failure": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "count": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "lastError": {
+          "type": "string"
+        },
+        "nextRetry": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "NameSelection": {
+      "type": "object",
+      "properties": {
+        "namespaceToken": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "ReleaseAccessResponse": {
+      "type": "object"
+    },
+    "ReleaseShareResponse": {
+      "type": "object"
+    },
+    "ShareDetail": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string"
+        },
+        "shareMode": {
+          "type": "string"
+        },
+        "backendMode": {
+          "type": "string"
+        },
+        "frontendEndpoint": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "backendEndpoint": {
+          "type": "string"
+        },
+        "closed": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string"
+        },
+        "failure": {
+          "$ref": "#/definitions/Failure"
+        }
+      }
+    },
+    "ShareHttpHealthcheckResponse": {
+      "type": "object",
+      "properties": {
+        "healthy": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": "string"
+        }
+      }
+    },
+    "SharePrivateResponse": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string"
+        }
+      }
+    },
+    "SharePublicResponse": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string"
+        },
+        "frontendEndpoints": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "StatusResponse": {
+      "type": "object",
+      "properties": {
+        "accesses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/AccessDetail"
+          }
+        },
+        "shares": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ShareDetail"
+          }
+        }
+      }
+    },
+    "VersionResponse": {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "string"
+        },
+        "consoleEndpoint": {
+          "type": "string"
+        }
+      }
+    },
+    "googlerpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    }
+  }
+}

@@ -1,0 +1,3067 @@
+info:
+  description: zrok client access
+  title: zrok
+  version: 2.0.0
+
+basePath: /api/v2
+
+securityDefinitions:
+  key:
+    type: apiKey
+    in: header
+    name: x-token
+paths:
+  #
+  # account.yml
+  #
+  /changePassword:
+    post:
+      tags:
+        - account
+      security:
+        - key: []
+      operationId: changePassword
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              email:
+                type: string
+              oldPassword:
+                type: string
+              newPassword:
+                type: string
+      responses:
+        200:
+          description: password changed
+        400:
+          description: password not changed
+        401:
+          description: unauthorized
+        422:
+          description: password validation failure
+          schema:
+            $ref: '#/definitions/errorMessage'
+        500:
+          description: internal server error
+  
+  /invite:
+    post:
+      tags:
+        - account
+      operationId: invite
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              email:
+                type: string
+              inviteToken:
+                type: string
+      responses:
+        201:
+          description: invitation created
+        400:
+          description: invitation not created (already exists)
+          schema:
+            $ref: '#/definitions/errorMessage'
+        401:
+          description: unauthorized
+        500:
+          description: internal server error
+  
+  /login:
+    post:
+      tags:
+        - account
+      operationId: login
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              email:
+                type: string
+              password:
+                type: string
+      responses:
+        200:
+          description: login successful
+          schema:
+            type: string
+        401:
+          description: invalid login
+  
+  /regenerateAccountToken:
+    post:
+      tags:
+        - account
+      security:
+        - key: []
+      operationId: regenerateAccountToken
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              emailAddress:
+                type: string
+      responses:
+        200:
+          description: regenerate account token
+          schema:
+            properties:
+              accountToken:
+                type: string
+        404:
+          description: account not found
+        500:
+          description: internal server error
+  
+  /register:
+    post:
+      tags:
+        - account
+      operationId: register
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              registerToken:
+                type: string
+              password:
+                type: string
+      responses:
+        200:
+          description: account created
+          schema:
+            properties:
+              accountToken:
+                type: string
+        404:
+          description: request not found
+        422:
+          description: password validation failure
+          schema:
+            $ref: '#/definitions/errorMessage'
+        500:
+          description: internal server error
+  
+  /resetPassword:
+    post:
+      tags:
+        - account
+      operationId: resetPassword
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              resetToken:
+                type: string
+              password:
+                type: string
+      responses:
+        200:
+          description: password reset
+        404:
+          description: request not found
+        422:
+          description: password validation failure
+          schema:
+            $ref: '#/definitions/errorMessage'
+        500:
+          description: internal server error
+  
+  /resetPasswordRequest:
+    post:
+      tags:
+        - account
+      operationId: resetPasswordRequest
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              emailAddress:
+                type: string
+      responses:
+        201:
+          description: reset password request created
+        400:
+          description: reset password request not created
+        500:
+          description: internal server error
+  
+  /verify:
+    post:
+      tags:
+        - account
+      operationId: verify
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              registerToken:
+                type: string
+      responses:
+        200:
+          description: registration token ready
+          schema:
+            properties:
+              email:
+                type: string
+        404:
+          description: registration token not found
+        500:
+          description: internal server error
+  #
+  # admin.yml
+  #
+  /account:
+    post:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: createAccount
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              email:
+                type: string
+              password:
+                type: string
+      responses:
+        201:
+          description: created
+          schema:
+            properties:
+              accountToken:
+                type: string
+        401:
+          description: unauthorized
+        500:
+          description: internal server error
+    patch:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: updateAccountPassword
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              email:
+                type: string
+              password:
+                type: string
+      responses:
+        200:
+          description: ok
+        401:
+          description: unauthorized
+        404:
+          description: not found
+        422:
+          description: password validation failure
+          schema:
+            $ref: "#/definitions/errorMessage"
+        500:
+          description: internal server error
+    delete:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: deleteAccount
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              email:
+                type: string
+      responses:
+        200:
+          description: ok
+        401:
+          description: unauthorized
+        404:
+          description: not found
+        500:
+          description: internal server error
+  
+  /frontend:
+    post:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: createFrontend
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              zId:
+                type: string
+              url_template:
+                type: string
+              public_name:
+                type: string
+              permissionMode:
+                type: string
+                enum: [ "open", "closed" ]
+              dynamic:
+                type: boolean
+      responses:
+        201:
+          description: frontend created
+          schema:
+            type: object
+            properties:
+              frontendToken:
+                type: string
+        400:
+          description: bad request
+        401:
+          description: unauthorized
+        404:
+          description: not found
+        500:
+          description: internal server error
+    patch:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: updateFrontend
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              frontendToken:
+                type: string
+              publicName:
+                type: string
+              urlTemplate:
+                type: string
+              dynamic:
+                type: boolean
+              dynamicSet:
+                type: boolean
+      responses:
+        200:
+          description: frontend updated
+        401:
+          description: unauthorized
+        404:
+          description: not found
+        500:
+          description: internal server error
+    delete:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: deleteFrontend
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              frontendToken:
+                type: string
+      responses:
+        200:
+          description: frontend deleted
+        401:
+          description: unauthorized
+        404:
+          description: not found
+        500:
+          description: internal server error
+  
+  /frontend/grant:
+    post:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: addFrontendGrant
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              frontendToken:
+                type: string
+              email:
+                type: string
+      responses:
+        200:
+          description: ok
+        401:
+          description: unauthorized
+        404:
+          description: not found
+          schema:
+            $ref: "#/definitions/errorMessage"
+        500:
+          description: internal server error
+    delete:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: deleteFrontendGrant
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              frontendToken:
+                type: string
+              email:
+                type: string
+      responses:
+        200:
+          description: ok
+        401:
+          description: unauthorized
+        404:
+          description: not found
+          schema:
+            $ref: "#/definitions/errorMessage"
+        500:
+          description: internal server error
+  
+  /frontend/namespace/mapping/{frontendToken}:
+    get:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: listFrontendNamespaceMappings
+      parameters:
+        - name: frontendToken
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: frontend namespace mappings listed
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                namespaceToken:
+                  type: string
+                frontendToken:
+                  type: string
+                isDefault:
+                  type: boolean
+                createdAt:
+                  type: integer
+        401:
+          description: unauthorized
+        404:
+          description: frontend not found
+        500:
+          description: internal server error
+  
+  /frontends:
+    get:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: listFrontends
+      responses:
+        200:
+          description: ok
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                frontendToken:
+                  type: string
+                zId:
+                  type: string
+                urlTemplate:
+                  type: string
+                publicName:
+                  type: string
+                permissionMode:
+                  type: string
+                dynamic:
+                  type: boolean
+                createdAt:
+                  type: integer
+                updatedAt:
+                  type: integer
+        401:
+          description: unauthorized
+        500:
+          description: internal server error
+  
+  /identity:
+    post:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: createIdentity
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              name:
+                type: string
+      responses:
+        201:
+          description: created
+          schema:
+            properties:
+              identity:
+                type: string
+              cfg:
+                type: string
+        401:
+          description: unauthorized
+        500:
+          description: internal server error
+    delete:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: deleteIdentity
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              zId:
+                type: string
+      responses:
+        200:
+          description: deleted
+        401:
+          description: unauthorized
+        404:
+          description: not found
+        500:
+          description: internal server error
+  
+  /invite/token/generate:
+    post:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: inviteTokenGenerate
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              inviteTokens:
+                type: array
+                items:
+                  type: string
+      responses:
+        201:
+          description: invite tokens created
+        400:
+          description: invite tokens not created
+        401:
+          description: unauthorized
+        500:
+          description: internal server error
+  
+  /namespace:
+    post:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: createNamespace
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              token:
+                type: string
+              name:
+                type: string
+              description:
+                type: string
+              open:
+                type: boolean
+      responses:
+        201:
+          description: namespace created
+          schema:
+            properties:
+              namespaceToken:
+                type: string
+        401:
+          description: unauthorized
+        409:
+          description: namespace already exists
+        500:
+          description: internal server error
+    patch:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: updateNamespace
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              namespaceToken:
+                type: string
+              name:
+                type: string
+              description:
+                type: string
+              open:
+                type: boolean
+              openSet:
+                type: boolean
+      responses:
+        200:
+          description: namespace updated
+        401:
+          description: unauthorized
+        404:
+          description: not found
+        500:
+          description: internal server error
+    delete:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: deleteNamespace
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              namespaceToken:
+                type: string
+      responses:
+        200:
+          description: namespace deleted
+        401:
+          description: unauthorized
+        404:
+          description: not found
+        500:
+          description: internal server error
+  
+  /namespace/frontend/mapping:
+    post:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: addNamespaceFrontendMapping
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              namespaceToken:
+                type: string
+              frontendToken:
+                type: string
+              isDefault:
+                type: boolean
+      responses:
+        200:
+          description: namespace frontend mapping added
+        401:
+          description: unauthorized
+        404:
+          description: not found
+        500:
+          description: internal server error
+    delete:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: removeNamespaceFrontendMapping
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              namespaceToken:
+                type: string
+              frontendToken:
+                type: string
+      responses:
+        200:
+          description: namespace frontend mapping removed
+        401:
+          description: unauthorized
+        404:
+          description: not found
+        500:
+          description: internal server error
+  
+  /namespace/frontend/mapping/{namespaceToken}:
+    get:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: listNamespaceFrontendMappings
+      parameters:
+        - name: namespaceToken
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: namespace frontend mappings listed
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                namespaceToken:
+                  type: string
+                frontendToken:
+                  type: string
+                isDefault:
+                  type: boolean
+                createdAt:
+                  type: integer
+        401:
+          description: unauthorized
+        404:
+          description: namespace not found
+        500:
+          description: internal server error
+  
+  /namespace/grant:
+    post:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: addNamespaceGrant
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              namespaceToken:
+                type: string
+              email:
+                type: string
+      responses:
+        200:
+          description: namespace grant added
+        401:
+          description: unauthorized
+        404:
+          description: not found
+        500:
+          description: internal server error
+    delete:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: removeNamespaceGrant
+      parameters:
+        - name: body
+          in: body
+          schema:
+            type: object
+            properties:
+              namespaceToken:
+                type: string
+              email:
+                type: string
+      responses:
+        200:
+          description: namespace grant removed
+        401:
+          description: unauthorized
+        404:
+          description: not found
+        500:
+          description: internal server error
+  
+  /name/{namespaceToken}/{name}:
+    get:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: getName
+      parameters:
+        - name: namespaceToken
+          in: path
+          type: string
+          required: true
+        - name: name
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: ok
+          schema:
+            type: object
+            required:
+              - namespaceToken
+              - namespaceName
+              - name
+              - accountEmail
+              - shareToken
+              - reserved
+              - createdAt
+            properties:
+              namespaceToken:
+                type: string
+              namespaceName:
+                type: string
+              name:
+                type: string
+              accountEmail:
+                type: string
+              shareToken:
+                type: string
+              reserved:
+                type: boolean
+              createdAt:
+                type: integer
+        401:
+          description: unauthorized
+        404:
+          description: not found
+        500:
+          description: internal server error
+  
+  /namespaces:
+    get:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: listNamespaces
+      responses:
+        200:
+          description: ok
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                namespaceToken:
+                  type: string
+                name:
+                  type: string
+                description:
+                  type: string
+                open:
+                  type: boolean
+                createdAt:
+                  type: integer
+                updatedAt:
+                  type: integer
+        401:
+          description: unauthorized
+        500:
+          description: internal server error
+  
+  /organization:
+    post:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: createOrganization
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              description:
+                type: string
+      responses:
+        201:
+          description: organization created
+          schema:
+            properties:
+              organizationToken:
+                type: string
+        401:
+          description: unauthorized
+        500:
+          description: internal server error
+    delete:
+        tags:
+          - admin
+        security:
+          - key: []
+        operationId: deleteOrganization
+        parameters:
+          - name: body
+            in: body
+            schema:
+              properties:
+                organizationToken:
+                  type: string
+        responses:
+          200:
+            description: organization deleted
+          401:
+            description: unauthorized
+          404:
+            description: organization not found
+          500:
+            description: internal server error
+  
+  /organization/add:
+    post:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: addOrganizationMember
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              organizationToken:
+                type: string
+              email:
+                type: string
+              admin:
+                type: boolean
+      responses:
+        201:
+          description: member added
+        401:
+          description: unauthorized
+        404:
+          description: not found
+        500:
+          description: internal server error
+  
+  /organization/list:
+    post:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: listOrganizationMembers
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              organizationToken:
+                type: string
+      responses:
+        200:
+          description: list organization members
+          schema:
+            properties:
+              members:
+                type: array
+                items:
+                  properties:
+                    email:
+                      type: string
+                    admin:
+                      type: boolean
+        401:
+          description: unauthorized
+        404:
+          description: not found
+        500:
+          description: internal server error
+  
+  /organization/remove:
+    post:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: removeOrganizationMember
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              organizationToken:
+                type: string
+              email:
+                type: string
+      responses:
+        200:
+          description: member removed
+        401:
+          description: unauthorized
+        404:
+          description: not found
+        500:
+          description: internal server error
+  
+  /organizations:
+    get:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: listOrganizations
+      responses:
+        200:
+          description: ok
+          schema:
+            properties:
+              organizations:
+                type: array
+                items:
+                  properties:
+                    organizationToken:
+                      type: string
+                    description:
+                      type: string
+        401:
+          description: unauthorized
+        500:
+          description: internal server error
+  
+  /limit-class/list:
+    post:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: listLimitClasses
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              label:
+                type: string
+      responses:
+        200:
+          description: limit classes
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/limitClass"
+        401:
+          description: unauthorized
+        500:
+          description: internal server error
+  
+  /applied-limit-class:
+    post:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: applyLimitClasses
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              email:
+                type: string
+              limitClassIds:
+                type: array
+                items:
+                  type: integer
+      responses:
+        200:
+          description: applied
+        401:
+          description: unauthorized
+        404:
+          description: account or limit class not found
+        500:
+          description: internal server error
+    delete:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: removeAppliedLimitClasses
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              email:
+                type: string
+              limitClassIds:
+                type: array
+                items:
+                  type: integer
+      responses:
+        200:
+          description: removed
+        401:
+          description: unauthorized
+        404:
+          description: account not found
+        500:
+          description: internal server error
+  
+  /applied-limit-class/list:
+    post:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: listAppliedLimitClasses
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              email:
+                type: string
+      responses:
+        200:
+          description: applied limit classes
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/limitClass"
+        401:
+          description: unauthorized
+        404:
+          description: account not found
+        500:
+          description: internal server error
+  
+  /skip-interstitial-grant:
+    get:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: getSkipInterstitialGrant
+      parameters:
+        - name: email
+          in: query
+          type: string
+          required: true
+      responses:
+        200:
+          description: ok
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+              granted:
+                type: boolean
+        401:
+          description: unauthorized
+        404:
+          description: account not found
+        500:
+          description: internal server error
+    post:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: grantSkipInterstitial
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              email:
+                type: string
+      responses:
+        200:
+          description: ok
+        401:
+          description: unauthorized
+        404:
+          description: account not found
+        500:
+          description: internal server error
+    delete:
+      tags:
+        - admin
+      security:
+        - key: []
+      operationId: revokeSkipInterstitial
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              email:
+                type: string
+      responses:
+        200:
+          description: ok
+        401:
+          description: unauthorized
+        404:
+          description: account not found
+        500:
+          description: internal server error
+
+  #
+  # agent.yml
+  #
+  /agent/access:
+    post:
+      tags:
+        - agent
+      security:
+        - key: []
+      operationId: remoteAccess
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              envZId:
+                type: string
+              token:
+                type: string
+              bindAddress:
+                type: string
+              autoMode:
+                type: boolean
+              autoAddress:
+                type: string
+              autoStartPort:
+                type: integer
+                minimum: 1
+                maximum: 65535
+              autoEndPort:
+                type: integer
+                minimum: 1
+                maximum: 65535
+              responseHeaders:
+                type: array
+                items:
+                  type: string
+      responses:
+        200:
+          description: ok
+          schema:
+            properties:
+              frontendToken:
+                type: string
+        401:
+          description: unauthorized
+        500:
+          description: internal server error
+        502:
+          description: bad gateway; agent not reachable
+  
+  /agent/enroll:
+    post:
+      tags:
+        - agent
+      security:
+        - key: []
+      operationId: enroll
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              envZId:
+                type: string
+      responses:
+        200:
+          description: ok
+          schema:
+            properties:
+              token:
+                type: string
+        400:
+          description: bad request; already enrolled
+        401:
+          description: unauthorized
+        500:
+          description: internal server error
+  
+  /agent/ping:
+    post:
+      tags:
+        - agent
+      security:
+        - key: []
+      operationId: ping
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              envZId:
+                type: string
+      responses:
+        200:
+          description: ok
+          schema:
+            properties:
+              version:
+                type: string
+        401:
+          description: unauthorized
+        500:
+          description: internal server error
+        502:
+          description: bad gateway; agent not reachable
+  
+  /agent/share:
+    post:
+      tags:
+        - agent
+      security:
+        - key: []
+      operationId: remoteShare
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              envZId:
+                type: string
+              shareMode:
+                type: string
+                enum: ["public", "private"]
+              token:
+                type: string
+              target:
+                type: string
+              basicAuth:
+                type: array
+                items:
+                  type: string
+              nameSelections:
+                type: array
+                items:
+                  $ref: "#/definitions/nameSelection"
+              privateShareToken:
+                type: string
+              backendMode:
+                type: string
+                enum: ["proxy", "web", "tcpTunnel", "udpTunnel", "caddy", "drive", "socks"]
+              insecure:
+                type: boolean
+              oauthProvider:
+                type: string
+              oauthEmailDomains:
+                type: array
+                items:
+                  type: string
+              oauthRefreshInterval:
+                type: string
+              open:
+                type: boolean
+              accessGrants:
+                type: array
+                items:
+                  type: string
+      responses:
+        200:
+          description: ok
+          schema:
+            properties:
+              token:
+                type: string
+              frontendEndpoints:
+                type: array
+                items:
+                  type: string
+        401:
+          description: unauthorized
+        500:
+          description: internal server error
+        502:
+          description: bad gateway; agent not reachable
+  
+  /agent/share/http-healthcheck:
+    post:
+      tags:
+        - agent
+      security:
+        - key: []
+      operationId: shareHttpHealthcheck
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              envZId:
+                type: string
+              shareToken:
+                type: string
+              httpVerb:
+                type: string
+              endpoint:
+                type: string
+              expectedHttpResponse:
+                type: number
+              timeoutMs:
+                type: number
+      responses:
+        200:
+          description: ok
+          schema:
+            properties:
+              healthy:
+                type: boolean
+              error:
+                type: string
+        401:
+          description: unauthorized
+        500:
+          description: internal server error
+        502:
+          description: bad gateway; agent not reachable
+  
+  /agent/status:
+    post:
+      tags:
+        - agent
+      security:
+        - key: []
+      operationId: remoteStatus
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              envZId:
+                type: string
+      responses:
+        200:
+          description: ok
+          schema:
+            properties:
+              shares:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    token:
+                      type: string
+                    shareMode:
+                      type: string
+                    backendMode:
+                      type: string
+                    frontendEndpoints:
+                      type: array
+                      items:
+                        type: string
+                    backendEndpoint:
+                      type: string
+                    open:
+                      type: boolean
+                    status:
+                      type: string
+                    failure:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        count:
+                          type: integer
+                        lastError:
+                          type: string
+                        nextRetry:
+                          type: string
+              accesses:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    frontendToken:
+                      type: string
+                    token:
+                      type: string
+                    bindAddress:
+                      type: string
+                    responseHeaders:
+                      type: array
+                      items:
+                        type: string
+                    status:
+                      type: string
+                    failure:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        count:
+                          type: integer
+                        lastError:
+                          type: string
+                        nextRetry:
+                          type: string
+        401:
+          description: unauthorized
+        500:
+          description: internal server error
+        502:
+          description: bad gateway; agent not reachable
+  
+  /agent/unaccess:
+    post:
+      tags:
+        - agent
+      security:
+        - key: []
+      operationId: remoteUnaccess
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              envZId:
+                type: string
+              frontendToken:
+                type: string
+      responses:
+        200:
+          description: ok
+        401:
+          description: unauthorized
+        500:
+          description: internal server error
+        502:
+          description: bad gateway; agent not reachable
+  
+  /agent/unenroll:
+    post:
+      tags:
+        - agent
+      security:
+        - key: []
+      operationId: unenroll
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              envZId:
+                type: string
+      responses:
+        200:
+          description: ok
+        400:
+          description: bad request; not enrolled
+        401:
+          description: unauthorized
+        500:
+          description: internal server error
+  
+  /agent/unshare:
+    post:
+      tags:
+        - agent
+      security:
+        - key: []
+      operationId: remoteUnshare
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              envZId:
+                type: string
+              token:
+                type: string
+      responses:
+        200:
+          description: ok
+        401:
+          description: unauthorized
+        500:
+          description: internal server error
+        502:
+          description: bad gateway; agent not reachable
+  #
+  # environment.yml
+  #
+  /enable:
+    post:
+      tags:
+        - environment
+      security:
+        - key: []
+      operationId: enable
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              description:
+                type: string
+              host:
+                type: string
+      responses:
+        201:
+          description: environment enabled
+          schema:
+            properties:
+              identity:
+                type: string
+              cfg:
+                type: string
+        401:
+          description: unauthorized
+        404:
+          description: account not found
+        500:
+          description: internal server error
+        503:
+          description: service unavailable
+          headers:
+            Retry-After:
+              type: integer
+              description: seconds to wait before retrying
+  
+  /disable:
+    post:
+      tags:
+        - environment
+      security:
+        - key: []
+      operationId: disable
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              identity:
+                type: string
+      responses:
+        200:
+          description: environment disabled
+        401:
+          description: invalid environment
+        500:
+          description: internal server error
+        503:
+          description: service unavailable
+          headers:
+            Retry-After:
+              type: integer
+              description: seconds to wait before retrying
+  #
+  # metadata.yml
+  #
+  /clientVersionCheck:
+    post:
+      tags:
+        - metadata
+      operationId: clientVersionCheck
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              clientVersion:
+                type: string
+      responses:
+        200:
+          description: compatible
+        400:
+          description: not compatible
+          schema:
+            type: string
+  
+  /configuration:
+    get:
+      tags:
+        - metadata
+      operationId: configuration
+      responses:
+        200:
+          description: current configuration
+          schema:
+            $ref: "#/definitions/configuration"
+  
+  /detail/account:
+    get:
+      tags:
+        - metadata
+      security:
+        - key: []
+      operationId: getAccountDetail
+      responses:
+        200:
+          description: ok
+          schema:
+            $ref: "#/definitions/environments"
+        500:
+          description: internal server error
+  
+  /detail/environment/{envZId}:
+    get:
+      tags:
+        - metadata
+      security:
+        - key: []
+      operationId: getEnvironmentDetail
+      parameters:
+        - name: envZId
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: ok
+          schema:
+            $ref: "#/definitions/environmentAndResources"
+        401:
+          description: unauthorized
+        404:
+          description: not found
+        500:
+          description: internal server error
+  
+  /environments:
+    get:
+      tags:
+        - metadata
+      security:
+        - key: []
+      operationId: listEnvironments
+      parameters:
+        - name: description
+          in: query
+          type: string
+          description: filter by description (case-insensitive substring match)
+        - name: host
+          in: query
+          type: string
+          description: filter by host (case-insensitive substring match)
+        - name: address
+          in: query
+          type: string
+          description: filter by address (exact match)
+        - name: remoteAgent
+          in: query
+          type: boolean
+          description: filter by whether agent is enrolled
+        - name: hasShares
+          in: query
+          type: boolean
+          description: filter by whether environment has active shares
+        - name: hasAccesses
+          in: query
+          type: boolean
+          description: filter by whether environment has active accesses
+        - name: hasActivity
+          in: query
+          type: boolean
+          description: filter by whether environment has metrics within activityDuration timeframe
+        - name: idle
+          in: query
+          type: boolean
+          description: filter environments WITHOUT recent activity (inverse of hasActivity)
+        - name: shareCount
+          in: query
+          type: string
+          description: filter by share count with operator (e.g., ">0", ">=5", "=0", "<10", "<=3")
+        - name: accessCount
+          in: query
+          type: string
+          description: filter by access count with operator (e.g., ">0", ">=5", "=0", "<10", "<=3")
+        - name: createdAfter
+          in: query
+          type: string
+          description: filter by created date (RFC3339 datetime, inclusive)
+        - name: createdBefore
+          in: query
+          type: string
+          description: filter by created date (RFC3339 datetime, inclusive)
+        - name: updatedAfter
+          in: query
+          type: string
+          description: filter by updated date (RFC3339 datetime, inclusive)
+        - name: updatedBefore
+          in: query
+          type: string
+          description: filter by updated date (RFC3339 datetime, inclusive)
+        - name: activityDuration
+          in: query
+          type: string
+          description: duration for hasActivity filter (e.g., "24h", "7d", "30d"). default "24h", maximum "30d" (720h)
+      responses:
+        200:
+          description: list of environments
+          schema:
+            $ref: "#/definitions/environmentsList"
+        400:
+          description: bad request (e.g., activityDuration exceeds 30d, invalid date format, invalid operator)
+          schema:
+            $ref: "#/definitions/errorMessage"
+        401:
+          description: unauthorized
+        500:
+          description: internal server error
+          schema:
+            $ref: "#/definitions/errorMessage"
+  
+  /shares:
+    get:
+      tags:
+        - metadata
+      security:
+        - key: []
+      operationId: listShares
+      parameters:
+        - name: envZId
+          in: query
+          type: string
+          description: filter by environment ziti identity
+        - name: shareMode
+          in: query
+          type: string
+          description: filter by share mode (public/private)
+        - name: backendMode
+          in: query
+          type: string
+          description: filter by backend mode
+        - name: shareToken
+          in: query
+          type: string
+          description: filter by share token (substring match)
+        - name: target
+          in: query
+          type: string
+          description: filter by target (substring match)
+        - name: permissionMode
+          in: query
+          type: string
+          description: filter by permission mode (open/closed)
+        - name: hasActivity
+          in: query
+          type: boolean
+          description: filter shares with recent activity
+        - name: idle
+          in: query
+          type: boolean
+          description: filter shares WITHOUT recent activity (inverse of hasActivity)
+        - name: activityDuration
+          in: query
+          type: string
+          description: duration for hasActivity filter (e.g., "24h", "7d", "30d"). default "24h", maximum "30d" (720h)
+        - name: createdAfter
+          in: query
+          type: string
+          description: filter by created date (RFC3339 format)
+        - name: createdBefore
+          in: query
+          type: string
+          description: filter by created date (RFC3339 format)
+        - name: updatedAfter
+          in: query
+          type: string
+          description: filter by updated date (RFC3339 format)
+        - name: updatedBefore
+          in: query
+          type: string
+          description: filter by updated date (RFC3339 format)
+      responses:
+        200:
+          description: list of shares
+          schema:
+            $ref: "#/definitions/sharesList"
+        400:
+          description: bad request (e.g., activityDuration exceeds 30d, invalid date format)
+          schema:
+            $ref: "#/definitions/errorMessage"
+        401:
+          description: unauthorized
+        500:
+          description: internal server error
+          schema:
+            $ref: "#/definitions/errorMessage"
+  
+  /accesses:
+    get:
+      tags:
+        - metadata
+      security:
+        - key: []
+      operationId: listAccesses
+      parameters:
+        - name: envZId
+          in: query
+          type: string
+          description: filter by environment ziti identity
+        - name: shareToken
+          in: query
+          type: string
+          description: filter by associated share token
+        - name: bindAddress
+          in: query
+          type: string
+          description: filter by bind address (substring match)
+        - name: description
+          in: query
+          type: string
+          description: filter by description (substring match)
+        - name: createdAfter
+          in: query
+          type: string
+          description: filter by created date (RFC3339 format)
+        - name: createdBefore
+          in: query
+          type: string
+          description: filter by created date (RFC3339 format)
+        - name: updatedAfter
+          in: query
+          type: string
+          description: filter by updated date (RFC3339 format)
+        - name: updatedBefore
+          in: query
+          type: string
+          description: filter by updated date (RFC3339 format)
+      responses:
+        200:
+          description: list of accesses
+          schema:
+            $ref: "#/definitions/accessesList"
+        400:
+          description: bad request (e.g., activityDuration exceeds 30d, invalid date format)
+          schema:
+            $ref: "#/definitions/errorMessage"
+        401:
+          description: unauthorized
+        500:
+          description: internal server error
+          schema:
+            $ref: "#/definitions/errorMessage"
+  
+  /detail/frontend/{frontendId}:
+    get:
+      tags:
+        - metadata
+      security:
+        - key: []
+      operationId: getFrontendDetail
+      parameters:
+        - name: frontendId
+          in: path
+          type: integer
+          required: true
+      responses:
+        200:
+          description: ok
+          schema:
+            $ref: "#/definitions/frontend"
+        401:
+          description: unauthorized
+        404:
+          description: not found
+        500:
+          description: internal server error
+  
+  /detail/share/{shareToken}:
+    get:
+      tags:
+        - metadata
+      security:
+        - key: []
+      operationId: getShareDetail
+      parameters:
+        - name: shareToken
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: ok
+          schema:
+            $ref: "#/definitions/share"
+        401:
+          description: unauthorized
+        404:
+          description: not found
+        500:
+          description: internal server error
+  
+  /members/{organizationToken}:
+    get:
+      tags:
+        - metadata
+      security:
+        - key: []
+      operationId: listOrgMembers
+      parameters:
+          - name: organizationToken
+            in: path
+            type: string
+            required: true
+      responses:
+        200:
+          description: ok
+          schema:
+            properties:
+              members:
+                type: array
+                items:
+                  properties:
+                    email:
+                      type: string
+                    admin:
+                      type: boolean
+        404:
+          description: not found
+        500:
+          description: internal server error
+  
+  /memberships:
+    get:
+      tags:
+        - metadata
+      security:
+        - key: []
+      operationId: listMemberships
+      responses:
+        200:
+          description: ok
+          schema:
+            properties:
+              memberships:
+                type: array
+                items:
+                  properties:
+                    organizationToken:
+                      type: string
+                    description:
+                      type: string
+                    admin:
+                      type: boolean
+        500:
+          description: internal server error
+  
+  /overview:
+    get:
+      tags:
+        - metadata
+      security:
+        - key: []
+      operationId: overview
+      responses:
+        200:
+          description: overview returned
+          schema:
+            $ref: "#/definitions/overview"
+        500:
+          description: internal server error
+          schema:
+            $ref: "#/definitions/errorMessage"
+  
+  /overview/{organizationToken}/{accountEmail}:
+      get:
+        tags:
+          - metadata
+        security:
+          - key: []
+        operationId: orgAccountOverview
+        parameters:
+          - name: organizationToken
+            in: path
+            type: string
+            required: true
+          - name: accountEmail
+            in: path
+            type: string
+            required: true
+        responses:
+          200:
+            description: ok
+            schema:
+              $ref: "#/definitions/overview"
+          404:
+            description: not found
+          500:
+            description: internal server error
+  
+  /metrics/account:
+    get:
+      tags:
+        - metadata
+      security:
+        - key: []
+      operationId: getAccountMetrics
+      parameters:
+        - name: duration
+          in: query
+          type: string
+      responses:
+        200:
+          description: account metrics
+          schema:
+            $ref: "#/definitions/metrics"
+        400:
+          description: bad request
+        500:
+          description: internal server error
+  
+  /metrics/environment/{envId}:
+    get:
+      tags:
+        - metadata
+      security:
+        - key: []
+      operationId: getEnvironmentMetrics
+      parameters:
+        - name: envId
+          in: path
+          type: string
+          required: true
+        - name: duration
+          in: query
+          type: string
+      responses:
+        200:
+          description: environment metrics
+          schema:
+            $ref: "#/definitions/metrics"
+        400:
+          description: bad request
+        401:
+          description: unauthorized
+        500:
+          description: internal server error
+  
+  
+  /metrics/share/{shareToken}:
+    get:
+      tags:
+        - metadata
+      security:
+        - key: []
+      operationId: getShareMetrics
+      parameters:
+        - name: shareToken
+          in: path
+          type: string
+          required: true
+        - name: duration
+          in: query
+          type: string
+      responses:
+        200:
+          description: share metrics
+          schema:
+            $ref: "#/definitions/metrics"
+        400:
+          description: bad request
+        401:
+          description: unauthorized
+        500:
+          description: internal server error
+  
+  /sparklines:
+    post:
+      tags:
+        - metadata
+      security:
+        - key: []
+      operationId: getSparklines
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              account:
+                type: boolean
+              environments:
+                type: array
+                items:
+                  type: string
+              shares:
+                type: array
+                items:
+                  type: string
+      responses:
+        200:
+          description: sparklines data
+          schema:
+            properties:
+              sparklines:
+                type: array
+                items:
+                  $ref: "#/definitions/metrics"
+        401:
+          description: unauthorized
+        500:
+          description: internal server error
+  
+  # deprecated (for legacy clients)
+  /version:
+    get:
+      tags:
+        - metadata
+      operationId: version
+      responses:
+        200:
+          description: legacy upgrade required
+          schema:
+            $ref: "#/definitions/version"
+  
+  /versions:
+    get:
+      tags:
+        - metadata
+      operationId: versionInventory
+      responses:
+        200:
+          description: ok
+          schema:
+            properties:
+              controllerVersion:
+                type: string
+  #
+  # share.yml
+  #
+  /access:
+    post:
+      tags:
+        - share
+      security:
+        - key: []
+      operationId: access
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              envZId:
+                type: string
+              shareToken:
+                type: string
+              bindAddress:
+                type: string
+              description:
+                type: string
+      responses:
+        201:
+          description: access created
+          schema:
+            properties:
+              frontendToken:
+                type: string
+              backendMode:
+                type: string
+        401:
+          description: unauthorized
+        404:
+          description: not found
+        500:
+          description: internal server error
+        503:
+          description: service unavailable
+          headers:
+            Retry-After:
+              type: integer
+              description: seconds to wait before retrying
+    patch:
+      tags:
+        - share
+      security:
+        - key: []
+      operationId: updateAccess
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              frontendToken:
+                type: string
+              bindAddress:
+                type: string
+              description:
+                type: string
+      responses:
+        200:
+          description: access updated
+        401:
+          description: unauthorized
+        404:
+          description: not found
+        500:
+          description: internal server error
+  
+  /share:
+    post:
+      tags:
+        - share
+      security:
+        - key: [ ]
+      operationId: share
+      parameters:
+        - name: body
+          in: body
+          schema:
+            $ref: "#/definitions/shareRequest"
+      responses:
+        201:
+          description: share created
+          schema:
+            $ref: "#/definitions/shareResponse"
+        401:
+          description: unauthorized
+        404:
+          description: not found
+        409:
+          description: conflict
+          schema:
+            $ref: "#/definitions/errorMessage"
+        422:
+          description: unprocessable
+        500:
+          description: internal server error
+          schema:
+            $ref: "#/definitions/errorMessage"
+        503:
+          description: service unavailable
+          headers:
+            Retry-After:
+              type: integer
+              description: seconds to wait before retrying
+    patch:
+      tags:
+        - share
+      security:
+        - key: []
+      operationId: updateShare
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              shareToken:
+                type: string
+              addAccessGrants:
+                type: array
+                items:
+                  type: string
+              removeAccessGrants:
+                type: array
+                items:
+                  type: string
+      responses:
+        200:
+          description: share updated
+        400:
+          description: bad request
+        401:
+          description: unauthorized
+        404:
+          description: not found
+        500:
+          description: internal server error
+  
+  /share/name:
+    post:
+      tags:
+        - share
+      security:
+        - key: []
+      operationId: createShareName
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              namespaceToken:
+                type: string
+              name:
+                type: string
+      responses:
+        201:
+          description: name created
+        401:
+          description: unauthorized
+        404:
+          description: namespace not found
+        409:
+          description: name already exists
+          schema:
+            $ref: "#/definitions/errorMessage"
+        500:
+          description: internal server error
+    patch:
+      tags:
+        - share
+      security:
+        - key: []
+      operationId: updateShareName
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              namespaceToken:
+                type: string
+              name:
+                type: string
+              reserved:
+                type: boolean
+                description: "whether the name should be reserved (true) or released (false)"
+      responses:
+        200:
+          description: name updated successfully
+        401:
+          description: unauthorized
+        404:
+          description: name not found
+        409:
+          description: conflict - cannot change reservation state
+          schema:
+            $ref: "#/definitions/errorMessage"
+        500:
+          description: internal server error
+    delete:
+      tags:
+        - share
+      security:
+        - key: []
+      operationId: deleteShareName
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              namespaceToken:
+                type: string
+              name:
+                type: string
+      responses:
+        200:
+          description: name deleted
+        401:
+          description: unauthorized
+        404:
+          description: name not found
+        409:
+          description: name is still attached to an active share
+          schema:
+            $ref: "#/definitions/errorMessage"
+        500:
+          description: internal server error
+  
+  /share/names:
+    get:
+      tags:
+        - share
+      security:
+        - key: []
+      operationId: listAllNames
+      responses:
+        200:
+          description: ok
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/name"
+        401:
+          description: unauthorized
+        500:
+          description: internal server error
+  
+  /share/names/{namespaceToken}:
+    get:
+      tags:
+        - share
+      security:
+        - key: []
+      operationId: listNamesForNamespace
+      parameters:
+        - name: namespaceToken
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: ok
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/name"
+        401:
+          description: unauthorized
+        404:
+          description: namespace not found
+        500:
+          description: internal server error
+  
+  /share/namespaces:
+    get:
+      tags:
+        - share
+      security:
+        - key: []
+      operationId: listShareNamespaces
+      responses:
+        200:
+          description: ok
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                namespaceToken:
+                  type: string
+                name:
+                  type: string
+                description:
+                  type: string
+        401:
+          description: unauthorized
+        500:
+          description: internal server error
+  
+  /unaccess:
+    delete:
+      tags:
+        - share
+      security:
+        - key: []
+      operationId: unaccess
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              frontendToken:
+                type: string
+              envZId:
+                type: string
+              shareToken:
+                type: string
+      responses:
+        200:
+          description: access removed
+        401:
+          description: unauthorized
+        404:
+          description: not found
+        500:
+          description: internal server error
+        503:
+          description: service unavailable
+          headers:
+            Retry-After:
+              type: integer
+              description: seconds to wait before retrying
+  
+  /unshare:
+    delete:
+      tags:
+        - share
+      security:
+        - key: [ ]
+      operationId: unshare
+      parameters:
+        - name: body
+          in: body
+          schema:
+            properties:
+              envZId:
+                type: string
+              shareToken:
+                type: string
+      responses:
+        200:
+          description: share removed
+        401:
+          description: unauthorized
+        404:
+          description: not found
+        500:
+          description: internal server error
+          schema:
+            $ref: "#/definitions/errorMessage"
+        503:
+          description: service unavailable
+          headers:
+            Retry-After:
+              type: integer
+              description: seconds to wait before retrying
+
+
+definitions:
+  authUser:
+    type: object
+    properties:
+      username:
+        type: string
+      password:
+        type: string
+  
+  configuration:
+    type: object
+    properties:
+      version:
+        type: string
+      touLink:
+        type: string
+      newAccountLink:
+        type: string
+      invitesOpen:
+        type: boolean
+      requiresInviteToken:
+        type: boolean
+      inviteTokenContact:
+        type: string
+  
+  environment:
+    type: object
+    properties:
+      description:
+        type: string
+      host:
+        type: string
+      address:
+        type: string
+      zId:
+        type: string
+      remoteAgent:
+        type: boolean
+      activity:
+        $ref: "#/definitions/sparkData"
+      limited:
+        type: boolean
+      createdAt:
+        type: integer
+      updatedAt:
+        type: integer
+  
+  environments:
+    type: array
+    items:
+      $ref: "#/definitions/environment"
+  
+  environmentAndResources:
+    type: object
+    properties:
+      environment:
+        $ref: "#/definitions/environment"
+      frontends:
+        $ref: "#/definitions/frontends"
+      shares:
+        $ref: "#/definitions/shares"
+  
+  environmentSummary:
+    type: object
+    properties:
+      envZId:
+        type: string
+      description:
+        type: string
+      host:
+        type: string
+      address:
+        type: string
+      remoteAgent:
+        type: boolean
+      shareCount:
+        type: integer
+      accessCount:
+        type: integer
+      limited:
+        type: boolean
+      createdAt:
+        type: integer
+      updatedAt:
+        type: integer
+  
+  environmentsList:
+    type: object
+    properties:
+      environments:
+        type: array
+        items:
+          $ref: "#/definitions/environmentSummary"
+  
+  shareSummary:
+    type: object
+    properties:
+      shareToken:
+        type: string
+      zId:
+        type: string
+      envZId:
+        type: string
+      shareMode:
+        type: string
+      backendMode:
+        type: string
+      frontendEndpoints:
+        type: array
+        items:
+          type: string
+      target:
+        type: string
+      limited:
+        type: boolean
+      createdAt:
+        type: integer
+      updatedAt:
+        type: integer
+  
+  sharesList:
+    type: object
+    properties:
+      shares:
+        type: array
+        items:
+          $ref: "#/definitions/shareSummary"
+  
+  accessSummary:
+    type: object
+    properties:
+      id:
+        type: integer
+      frontendToken:
+        type: string
+      envZId:
+        type: string
+      shareToken:
+        type: string
+      backendMode:
+        type: string
+      bindAddress:
+        type: string
+      description:
+        type: string
+      limited:
+        type: boolean
+      createdAt:
+        type: integer
+      updatedAt:
+        type: integer
+  
+  accessesList:
+    type: object
+    properties:
+      accesses:
+        type: array
+        items:
+          $ref: "#/definitions/accessSummary"
+  
+  errorMessage:
+    type: string
+  
+  frontend:
+    type: object
+    properties:
+      id:
+        type: integer
+      frontendToken:
+        type: string
+      shareToken:
+        type: string
+      backendMode:
+        type: string
+      bindAddress:
+        type: string
+      description:
+        type: string
+      zId:
+        type: string
+      createdAt:
+        type: integer
+      updatedAt:
+        type: integer
+  
+  frontends:
+    type: array
+    items:
+      $ref: "#/definitions/frontend"
+  
+  limitClass:
+    type: object
+    properties:
+      id:
+        type: integer
+      label:
+        type: string
+      backendMode:
+        type: string
+      environments:
+        type: integer
+      shares:
+        type: integer
+      reservedShares:
+        type: integer
+      uniqueNames:
+        type: integer
+      shareFrontends:
+        type: integer
+      periodMinutes:
+        type: integer
+      rxBytes:
+        type: integer
+      txBytes:
+        type: integer
+      totalBytes:
+        type: integer
+      limitAction:
+        type: string
+      createdAt:
+        type: integer
+      updatedAt:
+        type: integer
+  
+  metrics:
+    type: object
+    properties:
+      scope:
+        type: string
+      id:
+        type: string
+      period:
+        type: number
+      samples:
+        type: array
+        items:
+          $ref: "#/definitions/metricsSample"
+  
+  metricsSample:
+    type: object
+    properties:
+      rx:
+        type: number
+      tx:
+        type: number
+      timestamp:
+        type: number
+  
+  name:
+    type: object
+    properties:
+      namespaceToken:
+        type: string
+      namespaceName:
+        type: string
+      name:
+        type: string
+      shareToken:
+        type: string
+      reserved:
+        type: boolean
+      createdAt:
+        type: integer
+  
+  nameSelection:
+    type: object
+    properties:
+      namespaceToken:
+        type: string
+      name:
+        type: string
+  
+  overview:
+    type: object
+    properties:
+      accountLimited:
+        type: boolean
+      environments:
+        type: array
+        items:
+          $ref: "#/definitions/environmentAndResources"
+      namespaces:
+        type: array
+        items:
+          type: object
+          properties:
+            namespaceToken:
+              type: string
+            name:
+              type: string
+            description:
+              type: string
+      names:
+        type: array
+        items:
+          type: object
+          properties:
+            namespaceToken:
+              type: string
+            namespaceName:
+              type: string
+            name:
+              type: string
+            shareToken:
+              type: string
+            reserved:
+              type: boolean
+            createdAt:
+              type: integer
+  
+  principal:
+    type: object
+    properties:
+      id:
+        type: integer
+      email:
+        type: string
+      token:
+        type: string
+      limitless:
+        type: boolean
+      admin:
+        type: boolean
+  
+  share:
+    type: object
+    properties:
+      shareToken:
+        type: string
+      zId:
+        type: string
+      envZId:
+        type: string
+      shareMode:
+        type: string
+      backendMode:
+        type: string
+      frontendEndpoints:
+        type: array
+        items:
+          type: string
+      target:
+        type: string
+      activity:
+        $ref: "#/definitions/sparkData"
+      limited:
+        type: boolean
+      createdAt:
+        type: integer
+      updatedAt:
+        type: integer
+  
+  shares:
+    type: array
+    items:
+      $ref: "#/definitions/share"
+  
+  shareRequest:
+    type: object
+    properties:
+      envZId:
+        type: string
+      shareMode:
+        type: string
+        enum: ["public", "private"]
+      nameSelections:
+        type: array
+        items:
+          $ref: "#/definitions/nameSelection"
+      privateShareToken:
+        type: string
+      backendMode:
+        type: string
+        enum: ["proxy", "web", "tcpTunnel", "udpTunnel", "caddy", "drive", "socks"]
+      target:
+        type: string
+      authScheme:
+        type: string
+      basicAuthUsers:
+        type: array
+        items:
+          $ref: "#/definitions/authUser"
+      oauthProvider:
+        type: string
+      oauthEmailDomains:
+        type: array
+        items:
+          type: string
+      oauthRefreshInterval:
+        type: string
+      permissionMode:
+        type: string
+        enum: ["open", "closed"]
+      accessGrants:
+        type: array
+        items:
+          type: string
+  
+  shareResponse:
+    type: object
+    properties:
+      frontendProxyEndpoints:
+        type: array
+        items:
+          type: string
+      shareToken:
+        type: string
+  
+  sparkData:
+    type: array
+    items:
+      $ref: "#/definitions/sparkDataSample"
+  
+  sparkDataSample:
+    type: object
+    properties:
+      rx:
+        type: number
+      tx:
+        type: number
+  
+  version:
+    type: string
+produces:
+- application/zrok.v1+json
+consumes:
+- application/zrok.v1+json
+schemes:
+- http
+swagger: "2.0"

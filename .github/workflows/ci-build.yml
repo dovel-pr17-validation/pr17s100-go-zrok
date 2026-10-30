@@ -1,0 +1,220 @@
+name: CI Build
+
+on:  # yamllint disable-line rule:truthy
+  workflow_dispatch:
+  push:
+    branches:
+      - '**'
+    tags-ignore:
+      - '**'
+    paths-ignore:
+      - 'docs/**'
+      - 'website/**'
+
+# cancel older, redundant builds that haven't started yet
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  ubuntu-build:
+    name: Build Linux AMD64 CLI
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: setup-go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: ./go.mod
+
+      - name: setup-node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+
+      - name: install ui node modules
+        shell: bash
+        run: npm ci
+        working-directory: ui
+
+      - name: build ui
+        shell: bash
+        run: npm run build
+        working-directory: ui
+        env:
+          CI: "true"
+
+      - name: install agent ui node modules
+        shell: bash
+        run: npm ci
+        working-directory: agent/agentUi
+
+      - name: build agent ui
+        shell: bash
+        run: npm run build
+        working-directory: agent/agentUi
+          
+      - name: go install
+        shell: bash
+        run: go install -ldflags "-X github.com/openziti/zrok/v2/build.Version=${{ github.ref }} -X github.com/openziti/zrok/v2/build.Hash=${{ github.sha }}" ./...
+
+      - name: go test
+        shell: bash
+        run: go test -v ./...
+
+      - name: solve GOBIN
+        id: solve_go_bin
+        shell: bash
+        run: |
+          echo DEBUG: go_path="$(go env GOPATH)"
+          echo go_bin="$(go env GOPATH)/bin" >> $GITHUB_OUTPUT
+
+      - name: upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-amd64
+          path: ${{ steps.solve_go_bin.outputs.go_bin }}/zrok2
+          if-no-files-found: error
+
+  windows-build:
+    name: Build Windows AMD64 CLI
+    runs-on: ubuntu-24.04
+    steps:
+      - run: sudo apt update
+      - run: sudo apt-get install gcc-mingw-w64-x86-64
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - run: git fetch --force --tags
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: ./go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - run: npm ci
+        working-directory: ui
+
+      - run: npm run build
+        working-directory: ui
+        env:
+          CI: "true"
+
+      - run: npm ci
+        working-directory: agent/agentUi
+
+      - run: npm run build
+        working-directory: agent/agentUi
+        env:
+          CI: "true"
+
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: '~> v2.14'
+          args: build --snapshot --clean --config .goreleaser-windows.yml
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-amd64
+          path: ./dist/**/zrok2.exe
+          if-no-files-found: error
+
+  pytest:
+    name: Test the Python SDK
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    defaults:
+      run:
+        working-directory: sdk/python
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+
+          set -o pipefail
+          set -o xtrace
+
+          python -m pip install --upgrade pip
+          pip install -r src/requirements.txt
+          pip install -r src/test-requirements.txt
+          pip install -r src/build-requirements.txt
+          pip install -e src/
+
+      - name: Test with pytest
+        shell: bash
+        run: |
+
+          set -o pipefail
+          set -o xtrace
+
+          pytest --cov=zrok_api --verbose src/
+
+      - name: Lint the Python SDK
+        shell: bash
+        run: |
+
+          set -o pipefail
+          set -o xtrace
+
+          flake8 .
+
+      - name: Verify wheel declares all runtime deps
+        shell: bash
+        run: |
+
+          set -o errexit
+          set -o pipefail
+          set -o xtrace
+
+          # Build the wheel in an isolated environment (like PyPI publish does)
+          pip install build
+          python -m build src/
+
+          # Install ONLY the built wheel in a fresh venv — no extras, no
+          # requirements.txt — to test exactly what "pip install zrok2" gets.
+          python -m venv /tmp/wheel-check
+          /tmp/wheel-check/bin/pip install src/dist/*.whl
+
+          # Compare declared wheel deps against requirements.txt
+          /tmp/wheel-check/bin/python -c "
+          import re, sys
+          from importlib.metadata import requires
+          from pathlib import Path
+
+          req_names = set()
+          for line in Path('src/requirements.txt').read_text().splitlines():
+              line = line.strip()
+              if line and not line.startswith('#'):
+                  req_names.add(re.split(r'[<>=~!\s]', line)[0].strip().lower())
+
+          declared = set()
+          for r in (requires('zrok2') or []):
+              if 'extra' not in r:
+                  declared.add(re.split(r'[<>=~!\s]', r)[0].strip().lower())
+
+          missing = req_names - declared
+          if missing:
+              print(f'FAIL: wheel is missing deps from requirements.txt: {missing}', file=sys.stderr)
+              sys.exit(1)
+          print(f'OK: wheel declares all {len(req_names)} deps from requirements.txt')
+          "
+
+          rm -rf /tmp/wheel-check
+

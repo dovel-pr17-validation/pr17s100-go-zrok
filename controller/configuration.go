@@ -1,0 +1,35 @@
+package controller
+
+import (
+	"github.com/go-openapi/runtime/middleware"
+	"github.com/openziti/zrok/v2/build"
+	"github.com/openziti/zrok/v2/controller/config"
+	"github.com/openziti/zrok/v2/rest_model_zrok"
+	"github.com/openziti/zrok/v2/rest_server_zrok/operations/metadata"
+)
+
+type configurationHandler struct {
+	cfg *config.Config
+}
+
+func newConfigurationHandler(cfg *config.Config) *configurationHandler {
+	return &configurationHandler{
+		cfg: cfg,
+	}
+}
+
+func (ch *configurationHandler) Handle(_ metadata.ConfigurationParams) middleware.Responder {
+	data := &rest_model_zrok.Configuration{
+		Version:             build.String(),
+		InvitesOpen:         cfg.Invites != nil && cfg.Invites.InvitesOpen,
+		RequiresInviteToken: cfg.Invites != nil && cfg.Invites.TokenStrategy == "store",
+	}
+	if cfg.Admin != nil {
+		data.TouLink = cfg.Admin.TouLink
+		data.NewAccountLink = cfg.Admin.NewAccountLink
+	}
+	if cfg.Invites != nil {
+		data.InviteTokenContact = cfg.Invites.TokenContact
+	}
+	return metadata.NewConfigurationOK().WithPayload(data)
+}

@@ -1,0 +1,25 @@
+.react-flow__node {
+    font-family: "Poppins", sans-serif;
+    font-size: 0.6em;
+    color: white;
+    border: 2px solid white;
+    border-radius: 10px;
+    background-color: var(--zrok-primary);
+    text-color: white;
+}
+.react-flow__node.selected {
+    color: black;
+    background-color: var(--zrok-secondary);
+    border: 2px solid var(--zrok-primary);
+    font-weight: bold;
+}
+.react-flow__handle {
+    background-color: var(--zrok-secondary);
+    border: 1px solid var(--zrok-primary);
+}
+.react-flow__edge-path {
+    stroke: var(--zrok-primary);
+}
+.react-flow__attribution {
+    display: none;
+}

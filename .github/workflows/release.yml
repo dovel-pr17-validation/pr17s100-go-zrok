@@ -1,0 +1,354 @@
+name: Pre-Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+env:
+  ZITI_DEB_TEST_REPO: ${{ vars.ZITI_DEB_TEST_REPO || 'zitipax-openziti-deb-test' }}
+  ZITI_RPM_TEST_REPO: ${{ vars.ZITI_RPM_TEST_REPO || 'zitipax-openziti-rpm-test' }}
+  JFROG_CLI_VERSION: ${{ vars.JFROG_CLI_VERSION || '2.50.4' }}
+
+jobs:
+  build-linux:
+    name: build-linux-${{ matrix.arch.goreleaser }}
+    needs:
+      - build-darwin
+      - build-windows
+    runs-on: ubuntu-22.04  # oldest Docker host runner for broadest kernel, syscall, ABI support
+    container: openziti/ziti-builder:v2  # v2 is based on ubuntu focal 20.04 for broadest glibc support
+    strategy:
+      matrix:
+        arch:
+          - goreleaser: amd64
+            deb: amd64
+            rpm: x86_64
+          - goreleaser: arm64
+            deb: arm64
+            rpm: aarch64
+          - goreleaser: armhf
+            deb: armhf
+            rpm: armv7hl
+    steps:
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - run: git fetch --force --tags
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: ./go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+
+      - run: npm ci
+        working-directory: ui
+
+      - run: npm run build
+        working-directory: ui
+        env:
+          CI: "true"
+
+      - run: npm ci
+        working-directory: agent/agentUi
+
+      - run: npm run build
+        working-directory: agent/agentUi
+        env:
+          CI: "true"
+
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: '~> v2.14'
+          args: release --skip=publish --config .goreleaser-linux-${{ matrix.arch.goreleaser }}.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-builds-linux-${{ matrix.arch.goreleaser }}
+          path: ./dist/*.gz
+
+      - name: Configure jFrog CLI
+        uses: jfrog/setup-jfrog-cli@v4
+        with:
+          version: ${{ env.JFROG_CLI_VERSION }}
+        env:
+          JF_ENV_1: ${{ secrets.ZITI_ARTIFACTORY_CLI_CONFIG_PACKAGE_UPLOAD }}
+
+      - name: Upload RPM to Artifactory pre-release repo
+        shell: bash
+        env:
+          ARCH: ${{ matrix.arch.rpm }}
+        run: |
+          set -o xtrace
+          shopt -s nullglob
+          SEMVER=${GITHUB_REF_NAME#v}
+          SEMVER_CORE=${SEMVER%%-*}
+          if [[ "$SEMVER_CORE" == ${SEMVER#*-} ]]; then
+            SEMVER_PRE=""  # no semver pre-release suffix
+          else
+            SEMVER_PRE=${SEMVER#*-}
+          fi
+          BINARY_PACKAGES=(zrok2)
+          META_PACKAGES=(zrok2-agent zrok2-controller zrok2-frontend zrok2-metrics-bridge)
+          for PAX in "${BINARY_PACKAGES[@]}" "${META_PACKAGES[@]}"; do
+            _pattern="./dist/${PAX}-${SEMVER_CORE}${SEMVER_PRE:+~${SEMVER_PRE}}*.${ARCH}.rpm"
+            if ! compgen -G "$_pattern" > /dev/null && [[ " ${META_PACKAGES[*]} " == *" ${PAX} "* ]]; then
+              # Fall back to noarch for meta packages
+              _pattern="./dist/${PAX}-${SEMVER_CORE}${SEMVER_PRE:+~${SEMVER_PRE}}*.noarch.rpm"
+            fi
+            if ! compgen -G "$_pattern" > /dev/null; then
+              echo "ERROR: No RPM files found matching pattern '${_pattern}'" >&2
+              ls -1 ./dist/
+              exit 1
+            fi
+            _rpms=( $_pattern )
+            if [[ ${#_rpms[@]} -ne 1 ]]; then
+              echo "ERROR: Failed to find exactly one RPM file, got: '${_rpms[@]}'" >&2
+              exit 1
+            fi
+
+            echo "INFO: Uploading ${_rpms[0]}"
+            jf rt upload \
+              --recursive=false \
+              --flat=true \
+              --fail-no-op=true \
+              "${_rpms[0]}" \
+              ${{ env.ZITI_RPM_TEST_REPO }}/redhat/${ARCH}/
+          done
+
+      - name: Upload DEB to Artifactory pre-release repo
+        shell: bash
+        env:
+          ARCH: ${{ matrix.arch.deb }}
+        run: |
+          set -o xtrace
+          shopt -s nullglob
+          SEMVER=${GITHUB_REF_NAME#v}
+          SEMVER_CORE=${SEMVER%%-*}
+          if [[ "$SEMVER_CORE" == ${SEMVER#*-} ]]; then
+            SEMVER_PRE=""  # no semver pre-release suffix
+          else
+            SEMVER_PRE=${SEMVER#*-}
+          fi
+          BINARY_PACKAGES=(zrok2)
+          META_PACKAGES=(zrok2-agent zrok2-controller zrok2-frontend zrok2-metrics-bridge)
+          for PAX in "${BINARY_PACKAGES[@]}" "${META_PACKAGES[@]}"; do
+            _pattern="./dist/${PAX}_${SEMVER_CORE}${SEMVER_PRE:+~${SEMVER_PRE}}*_${ARCH}.deb"
+            if ! compgen -G "$_pattern" > /dev/null && [[ " ${META_PACKAGES[*]} " == *" ${PAX} "* ]]; then
+              # Fall back to all for meta packages
+              _pattern="./dist/${PAX}_${SEMVER_CORE}${SEMVER_PRE:+~${SEMVER_PRE}}*_all.deb"
+            fi
+            if ! compgen -G "$_pattern" > /dev/null; then
+              echo "ERROR: No DEB files found matching pattern '${_pattern}'" >&2
+              ls -1 ./dist/
+              exit 1
+            fi
+            _debs=( $_pattern )
+            if [[ ${#_debs[@]} -ne 1 ]]; then
+              echo "ERROR: Failed to match exactly one DEB file, got: '${_debs[@]}'" >&2
+              exit 1
+            fi
+
+            echo "INFO: Uploading ${_debs[0]}"
+            jf rt upload \
+              --recursive=false \
+              --flat=true \
+              --fail-no-op=true \
+              --deb=debian/main/${ARCH} \
+              "${_debs[0]}" \
+              ${{ env.ZITI_DEB_TEST_REPO }}/pool/${PAX}/${ARCH}/
+          done
+
+  build-darwin:
+    if: github.repository_owner == 'openziti' || vars.ZROK_SKIP_MACOS_BUILD == 'false'
+    runs-on: macos-15-intel
+    steps:
+      - name: import distribution cert
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
+          p12-password: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - run: git fetch --force --tags
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: ./go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+
+      - run: npm ci
+        working-directory: ui
+
+      - run: npm run build
+        working-directory: ui
+        env:
+          CI: "true"
+
+      - run: npm ci
+        working-directory: agent/agentUi
+
+      - run: npm run build
+        working-directory: agent/agentUi
+        env:
+          CI: "true"
+
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: '~> v2.14'
+          args: release --skip=publish --config .goreleaser-darwin.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
+          AC_USERNAME: ${{ secrets.AC_USERNAME }}
+          AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-builds-darwin
+          path: ./dist/*.gz
+
+  build-windows:
+    if: github.repository_owner == 'openziti' || vars.ZROK_SKIP_WINDOWS_BUILD == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - run: sudo apt update
+      - run: sudo apt-get install gcc-mingw-w64-x86-64
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - run: git fetch --force --tags
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: ./go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+
+      - run: npm ci
+        working-directory: ui
+
+      - run: npm run build
+        working-directory: ui
+        env:
+          CI: "true"
+
+      - run: npm ci
+        working-directory: agent/agentUi
+
+      - run: npm run build
+        working-directory: agent/agentUi
+        env:
+          CI: "true"
+
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: '~> v2.14'
+          args: release --skip=publish --config .goreleaser-windows.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-builds-windows
+          path: ./dist/*.gz
+
+  call-publish-docker-images:
+    name: Publish Release Docker Images
+    needs:
+      - build-linux
+      - build-darwin
+      - build-windows
+    uses: ./.github/workflows/publish-docker-images.yml
+    secrets: inherit
+    with:
+      zrok-version: ${{ github.ref_name }}
+
+  draft-release:
+    runs-on: ubuntu-latest
+    needs: call-publish-docker-images
+    permissions:
+      contents: write  # need write to draft the release
+      id-token: write  # need write to get OIDC token for generating attestations
+      attestations: write  # need write to create attestations
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: |
+          mkdir -p ./automated-release-build
+
+      - name: Fetch Source Archive
+        shell: bash
+        run: |
+          curl -sSLf -o ./automated-release-build/source-${{ github.ref_name }}.tar.gz \
+            https://api.github.com/repos/${{ github.repository }}/tarball/${{ github.ref_name }}
+
+      - name: Build SBOM from Dependency Graph as SPDX JSON
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/${{ github.repository }}/dependency-graph/sbom \
+            | tee ./automated-release-build/sbom-${{ github.ref_name }}.spdx.json
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: ./automated-release-build
+          merge-multiple: true
+          pattern: release-builds-*
+
+      - name: Create Checksum Files
+        shell: bash
+        run: |
+
+          ls -lAR ./automated-release-build/
+
+          # create checksum file for the attestations
+          shasum --algorithm 256 ./automated-release-build/* | tee /tmp/attestation-subjects.sha256.txt
+
+          # create checksum file for the release
+          cd ./automated-release-build/
+          shasum --algorithm 256 ./* | tee ./checksums.sha256.txt
+
+      - name: Attest Build Provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-checksums: /tmp/attestation-subjects.sha256.txt
+
+      - name: Draft Release
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: '~> v2.14'
+          args: release --config .goreleaser-release.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_CURRENT_TAG: ${{ github.ref_name }}

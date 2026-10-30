@@ -1,0 +1,43 @@
+:root {
+    --zrok-primary: #241775;
+    --zrok-secondary: #9bf316;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-width: 320px;
+}
+
+code {
+  font-family: 'JetBrains Mono', sans-serif;
+}
+
+a {
+  font-weight: 500;
+  color: var(--zrok-primary);
+  text-decoration: inherit;
+}
+a:hover {
+  color: var(--zrok-secondary);
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+#root {
+  min-height: 100dvh;
+}
+
+#footer {
+  text-align: center;
+}
